@@ -31,7 +31,7 @@ jobs:
         
       - name: Zip artifact # This would actually build your project, using zip for an example artifact
         run: |
-          zip --junk-paths migrator bin/* -r
+          zip -r migrator bin/*
           
       - name: Create Release
         id: create_release
