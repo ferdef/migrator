@@ -20,12 +20,18 @@ jobs:
           go-version: 1.21
         id: go
 
-      - name: Build
-        run: go build -v -ldflags "-s -w" -o migrator ./...
+      - name: Build for Linux
+        run: go build -v -ldflags "-s -w" -o bin/linux/migrator ./...
 
+      - name: Build for Windows
+        run: GOOS=windows GOARCH=amd64 go build -v -ldflags "-s -w" -o bin/windows/migrator.exe ./...
+
+      - name: Build for Mac
+        run: GOOS=darwin GOARCH=amd64 go build -v -ldflags "-s -w" -o bin/macos/migrator ./...
+        
       - name: Zip artifact # This would actually build your project, using zip for an example artifact
         run: |
-          zip --junk-paths migrator migrator
+          zip --junk-paths migrator bin
           
       - name: Create Release
         id: create_release
