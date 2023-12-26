@@ -45,16 +45,16 @@ func main() {
 
 	defer db.Close()
 
-	// last, err := getLastMigration(db)
-	// check(err)
-	// infoLog.Printf("Last migration applied %d\n", last)
+	last, err := getLastMigration(db)
+	check(err)
+	infoLog.Printf("Last migration applied %d\n", last)
 
-	// files, err := getMigrationFiles(MIGRATIONS_PATH, last)
-	// check(err)
+	files, err := getMigrationFiles(MIGRATIONS_PATH, last)
+	check(err)
 
-	// fmt.Printf("Pending migrations: \n%v", files)
-	// err = applyMigrations(db, files)
-	// check(err)
+	fmt.Printf("Pending migrations: \n%v", files)
+	err = applyMigrations(db, files)
+	check(err)
 }
 
 func check(e error) {
@@ -111,7 +111,6 @@ func getLastMigration(db *sql.DB) (int, error) {
 		} else {
 			return -1, err
 		}
-
 	}
 
 	return int(last.Int32), nil
