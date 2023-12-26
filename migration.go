@@ -4,18 +4,67 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	_ "github.com/go-sql-driver/mysql"
 )
+
+type MigrationFile struct {
+	id   int
+	File fs.DirEntry
+}
 
 type Migration struct {
 	infoLog  *log.Logger
 	errorLog *log.Logger
 	cfg      Config
 	db       *sql.DB
+}
+
+const MIGRATIONS_TABLE = "migrations"
+const MIGRATIONS_PATH = "./internal/db/migrations/"
+
+func (m *Migration) migrate() {
+	m.infoLog = log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
+	m.errorLog = log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
+
+	m.connect()
+
+	defer m.db.Close()
+
+	if !m.checkTable() {
+		if m.cfg.createTable {
+			m.createTable()
+		} else {
+			m.errorLog.Fatalf("Table %s doesn't exist and we're not creating it. Exiting...", m.cfg.migrationsTable)
+		}
+	}
+
+	last, err := m.getLastMigration()
+	check(err)
+	m.infoLog.Printf("Last migration applied %d\n", last)
+
+	files, err := m.getMigrationFiles(last)
+	check(err)
+
+	m.infoLog.Printf("Pending migrations: \n%v", files)
+	err = m.applyMigrations(files)
+	check(err)
+}
+
+func (m *Migration) connect() {
+	m.infoLog.Print("Connecting to DB...")
+
+	db, err := openDB(m.cfg.dsn)
+	check(err)
+	m.db = db
+
+	m.infoLog.Println("Connected")
 }
 
 func (m *Migration) checkTable() bool {
